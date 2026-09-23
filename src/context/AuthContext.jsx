@@ -25,14 +25,14 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (email, password) => {
-    const response = await authService.login(email, password);
-    localStorage.setItem('ulpf_token', response.token);
-    localStorage.setItem('ulpf_user', JSON.stringify(response.user));
-    setUser(response.user);
-    return response;
-  };
-
+ const login = async (email, password) => {
+  const response = await authService.login(email, password);
+  const userData = { email, role: response.role };
+  localStorage.setItem('ulpf_token', response.token);
+  localStorage.setItem('ulpf_user', JSON.stringify(userData));
+  setUser(userData);
+  return response;
+};
   const register = async (name, email, password) => {
     const response = await authService.register(name, email, password);
     localStorage.setItem('ulpf_token', response.token);
