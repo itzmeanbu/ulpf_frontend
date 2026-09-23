@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 // Set to true to use mock data instead of real API
-export const USE_MOCK = true;
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const USE_MOCK = false;   // was true
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://ulpf-95ou.onrender.com/api';  // was localhost
 
 const api = axios.create({
   baseURL: API_BASE_URL,
