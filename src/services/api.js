@@ -33,7 +33,8 @@ api.interceptors.response.use(
       localStorage.removeItem('ulpf_user');
       window.location.href = '/login';
     }
-    const message = error.response?.data?.message || error.message || 'Something went wrong';
+   
+const message = error.response?.data?.error || error.message || 'Something went wrong';
     return Promise.reject(new Error(message));
   }
 );
