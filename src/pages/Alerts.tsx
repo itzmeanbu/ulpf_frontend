@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, CheckSquare, Square } from 'lucide-react';
 import PageContainer from '../components/layout/PageContainer';
 import Loading from '../components/common/Loading';
 import ErrorMessage from '../components/common/ErrorMessage';
@@ -17,6 +17,7 @@ export default function Alerts() {
   const [sev, setSev] = useState('');
   const [status, setStatus] = useState('');
   const [msg, setMsg] = useState('');
+  const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     try {
@@ -57,6 +58,27 @@ export default function Alerts() {
 
   const shown = alerts.filter((a) => (!sev || a.severity === sev) && (!status || a.status === status));
 
+  const allChecked = shown.length > 0 && shown.every((a) => checked.has(a.alertId));
+  const toggleAll = () => setChecked(allChecked ? new Set() : new Set(shown.map((a) => a.alertId)));
+  const toggleOne = (id: string) => setChecked((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const deleteSelected = async () => {
+    if (checked.size === 0) return;
+    if (!window.confirm(`Move ${checked.size} selected alert(s) to the recycle bin?`)) return;
+    const ids = Array.from(checked);
+    try {
+      setMsg('');
+      await alertService.bulkDeleteAlerts(ids);
+      setAlerts((list) => list.filter((a) => !ids.includes(a.alertId)));
+      setChecked(new Set());
+    } catch (e: any) {
+      setMsg(e.message);
+    }
+  };
+
   return (
     <PageContainer>
       <div className="pg-stack">
@@ -73,13 +95,26 @@ export default function Alerts() {
         </div>
         {msg && <div className="pg-msg err">{msg}</div>}
         <div className="panel">
+          {isAdmin && shown.length > 0 && (
+            <div className="pg-row" style={{ padding: '10px 20px', borderBottom: '1px solid var(--color-border)' }}>
+              <button className="pg-btn small ghost" onClick={toggleAll}>
+                {allChecked ? <CheckSquare size={14} /> : <Square size={14} />}
+                <span style={{ marginLeft: 6 }}>{allChecked ? 'Unselect all' : 'Select all'}</span>
+              </button>
+              <span className="pg-muted">{checked.size} of {shown.length} selected</span>
+              <ActionButton variant="danger" size="small" disabled={checked.size === 0} onClick={deleteSelected}>
+                <Trash2 size={14} /> Delete selected
+              </ActionButton>
+            </div>
+          )}
           {shown.length === 0 ? <div className="pg-empty">No alerts.</div> : (
             <div className="pg-table-wrap">
               <table className="pg-table">
-                <thead><tr><th>Severity</th><th>Reason</th><th>Related events</th><th>Time</th><th>Status</th>{isAdmin && <th></th>}</tr></thead>
+                <thead><tr>{isAdmin && <th style={{ width: 32 }}></th>}<th>Severity</th><th>Reason</th><th>Related events</th><th>Time</th><th>Status</th>{isAdmin && <th></th>}</tr></thead>
                 <tbody>
                   {shown.map((a) => (
                     <tr key={a.alertId}>
+                      {isAdmin && <td><input type="checkbox" checked={checked.has(a.alertId)} onChange={() => toggleOne(a.alertId)} /></td>}
                       <td><span className={`badge ${SEV_BADGE[a.severity] || 'badge-info'}`}>{a.severity}</span></td>
                       <td>{a.reason}</td>
                       <td>{a.relatedEvents?.length || 0}</td>

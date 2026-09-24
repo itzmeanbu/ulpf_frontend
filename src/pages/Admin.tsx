@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, CheckSquare, Square } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Loading from '../components/common/Loading';
@@ -188,20 +188,72 @@ function LogAccess() {
 }
 
 function Audit() {
-  const { data, error } = useLoad<any[]>(adminService.getAudit);
+  const { data, error, reload, setData } = useLoad<any[]>(adminService.getAudit);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [msg, setMsg] = useState('');
   if (error) return <div className="pg-msg err">{error}</div>;
   if (!data) return <Loading />;
+
+  const allSelected = data.length > 0 && selected.size === data.length;
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(data.map((a) => a.id)));
+  const toggleOne = (id: string) => setSelected((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const deleteOne = async (id: string) => {
+    if (!window.confirm('Move this audit entry to the recycle bin?')) return;
+    try {
+      setMsg('');
+      await adminService.deleteAudit(id);
+      setData((list) => list ? list.filter((a) => a.id !== id) : list);
+    } catch (e: any) { setMsg(e.message); }
+  };
+
+  const deleteSelected = async () => {
+    if (selected.size === 0) return;
+    if (!window.confirm(`Move ${selected.size} selected audit entr${selected.size === 1 ? 'y' : 'ies'} to the recycle bin?`)) return;
+    try {
+      setMsg('');
+      await adminService.bulkDeleteAudit(Array.from(selected));
+      setData((list) => list ? list.filter((a) => !selected.has(a.id)) : list);
+      setSelected(new Set());
+    } catch (e: any) { setMsg(e.message); }
+  };
+
   return (
-    <div className="panel pg-table-wrap">
-      {data.length === 0 ? <div className="pg-empty">Nothing recorded yet.</div> : (
-        <table className="pg-table">
-          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
-          <tbody>{data.map((a) => (
-            <tr key={a.id}><td>{new Date(a.created_at).toLocaleString()}</td><td>{a.user_email || '-'}</td><td>{a.action}</td>
-              <td className="pg-muted">{a.details ? JSON.stringify(a.details) : ''}</td></tr>))}
-          </tbody>
-        </table>
-      )}
+    <div className="pg-stack">
+      {msg && <div className="pg-msg err">{msg}</div>}
+      <div className="panel">
+        {data.length === 0 ? <div className="pg-empty">Nothing recorded yet.</div> : (
+          <>
+            <div className="pg-row" style={{ padding: '10px 20px', borderBottom: '1px solid var(--color-border)' }}>
+              <button className="pg-btn small ghost" onClick={toggleAll}>
+                {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                <span style={{ marginLeft: 6 }}>{allSelected ? 'Unselect all' : 'Select all'}</span>
+              </button>
+              <span className="pg-muted">{selected.size} of {data.length} selected</span>
+              <ActionButton variant="danger" size="small" disabled={selected.size === 0} onClick={deleteSelected}>
+                <Trash2 size={14} /> Delete selected
+              </ActionButton>
+            </div>
+            <div className="pg-table-wrap">
+              <table className="pg-table">
+                <thead><tr><th style={{ width: 32 }}></th><th>Time</th><th>User</th><th>Action</th><th>Details</th><th></th></tr></thead>
+                <tbody>{data.map((a) => (
+                  <tr key={a.id}>
+                    <td><input type="checkbox" checked={selected.has(a.id)} onChange={() => toggleOne(a.id)} /></td>
+                    <td>{new Date(a.created_at).toLocaleString()}</td><td>{a.user_email || '-'}</td><td>{a.action}</td>
+                    <td className="pg-muted">{a.details ? JSON.stringify(a.details) : ''}</td>
+                    <td><ActionButton variant="danger" size="small" onClick={() => deleteOne(a.id)}><Trash2 size={14} /></ActionButton></td>
+                  </tr>))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -233,7 +285,7 @@ function Reports() {
 /* Recycle Bin - "many pages" of it: one per deletable category.           */
 /* ---------------------------------------------------------------------- */
 
-const RECYCLE_PAGES = ['Logs', 'Accounts', 'Alerts', 'Log sources'];
+const RECYCLE_PAGES = ['Logs', 'Accounts', 'Alerts', 'Log sources', 'Audit log'];
 
 const logsRecycleConfig: RecycleBinConfig = {
   title: 'Logs',
@@ -289,6 +341,25 @@ const alertsRecycleConfig: RecycleBinConfig = {
   empty: () => adminService.emptyAlertsRecycleBin(),
 };
 
+const auditRecycleConfig: RecycleBinConfig = {
+  title: 'Audit log',
+  emptyMessage: 'No deleted audit entries.',
+  columns: [
+    { header: 'Deleted', cell: (a) => (a.deleted_at ? new Date(a.deleted_at).toLocaleString() : '-') },
+    { header: 'Time', cell: (a) => (a.created_at ? new Date(a.created_at).toLocaleString() : '-') },
+    { header: 'User', cell: (a) => a.user_email || '-' },
+    { header: 'Action', cell: (a) => a.action },
+    { header: 'Deleted by', cell: (a) => a.deleted_by_email || '-' },
+  ],
+  getId: (a) => a.id,
+  load: () => adminService.getDeletedAudit(),
+  restore: (id) => adminService.restoreAudit(id),
+  restoreBulk: (ids) => adminService.restoreAuditBulk(ids),
+  permanentDelete: (id) => adminService.permanentlyDeleteAudit(id),
+  permanentDeleteBulk: (ids) => adminService.permanentlyDeleteAuditBulk(ids),
+  empty: () => adminService.emptyAuditRecycleBin(),
+};
+
 const sourcesRecycleConfig: RecycleBinConfig = {
   title: 'Log sources',
   emptyMessage: 'No deleted log sources.',
@@ -318,23 +389,23 @@ function RecycleBinTab() {
   useEffect(() => { loadSummary(); }, [loadSummary]);
 
   const emptyEverything = async () => {
-    if (!window.confirm('Empty the ENTIRE recycle bin? Every deleted log, account, alert and source will be permanently deleted. This cannot be undone.')) return;
+    if (!window.confirm('Empty the ENTIRE recycle bin? Every deleted log, account, alert, source and audit entry will be permanently deleted. This cannot be undone.')) return;
     try {
       setMsg(null);
       const result = await adminService.emptyEntireRecycleBin();
-      setMsg({ type: 'ok', text: `Permanently deleted: ${result.logs} log(s), ${result.accounts} account(s), ${result.alerts} alert(s), ${result.sources} source(s).` });
+      setMsg({ type: 'ok', text: `Permanently deleted: ${result.logs} log(s), ${result.accounts} account(s), ${result.alerts} alert(s), ${result.sources} source(s), ${result.audit} audit entr${result.audit === 1 ? 'y' : 'ies'}.` });
       loadSummary();
     } catch (e: any) {
       setMsg({ type: 'err', text: e.message });
     }
   };
 
-  const badge: Record<string, string> = { Logs: 'logs', Accounts: 'accounts', Alerts: 'alerts', 'Log sources': 'sources' };
+  const badge: Record<string, string> = { Logs: 'logs', Accounts: 'accounts', Alerts: 'alerts', 'Log sources': 'sources', 'Audit log': 'audit' };
 
   return (
     <div className="pg-stack">
       <p className="pg-muted">
-        Everything deleted anywhere in ULPF - logs, accounts, alerts and log sources - lands
+        Everything deleted anywhere in ULPF - logs, accounts, alerts, log sources and audit entries - lands
         here first. Nothing is permanently gone until it's restored or emptied from below.
       </p>
       {msg && <div className={`pg-msg ${msg.type}`}>{msg.text}</div>}
@@ -353,6 +424,7 @@ function RecycleBinTab() {
       {page === 'Accounts' && <RecycleBinPanel key="accounts" config={accountsRecycleConfig} />}
       {page === 'Alerts' && <RecycleBinPanel key="alerts" config={alertsRecycleConfig} />}
       {page === 'Log sources' && <RecycleBinPanel key="sources" config={sourcesRecycleConfig} />}
+      {page === 'Audit log' && <RecycleBinPanel key="audit" config={auditRecycleConfig} />}
     </div>
   );
 }
