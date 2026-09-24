@@ -20,6 +20,9 @@ const logService = {
   unlockLog(id: string, secondaryPassword: string) {
     return api.post(`/logs/${id}/unlock`, { secondaryPassword });
   },
+  unlockField(id: string, field: string, secondaryPassword: string) {
+    return api.post(`/logs/${id}/unlock-field`, { field, secondaryPassword });
+  },
   requestSensitiveAccess() {
     return api.post('/access-requests', { type: 'sensitive' });
   },
