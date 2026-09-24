@@ -60,6 +60,10 @@ export default function Logs({ embedded = false }: { embedded?: boolean }) {
   const [unlockPw, setUnlockPw] = useState('');
   const [unlocked, setUnlocked] = useState<any>(null);
   const [panelMsg, setPanelMsg] = useState<{ type: string; text: string } | null>(null);
+  const [fieldPopup, setFieldPopup] = useState<{ field: string; masked: string } | null>(null);
+  const [fieldPw, setFieldPw] = useState('');
+  const [fieldRes, setFieldRes] = useState<any>(null);
+  const [fieldMsg, setFieldMsg] = useState<{ type: string; text: string } | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   // Analysts start on "My uploads"; admins and viewers start on "All logs".
   const [scope, setScope] = useState<Scope>(canUpload && !isAdmin ? 'mine' : 'all');
@@ -187,6 +191,21 @@ export default function Logs({ embedded = false }: { embedded?: boolean }) {
       setPanelMsg({ type: 'ok', text: 'Unlocked. Original values are shown below.' });
     } catch (e: any) {
       setPanelMsg({ type: 'err', text: e.message });
+    }
+  };
+
+  const openField = (field: string, masked: string) => {
+    setFieldPopup({ field, masked }); setFieldPw(''); setFieldRes(null); setFieldMsg(null);
+  };
+  const closeField = () => { setFieldPopup(null); setFieldPw(''); setFieldRes(null); setFieldMsg(null); };
+  const unlockField = async () => {
+    if (!fieldPopup || !selected) return;
+    try {
+      setFieldMsg(null);
+      setFieldRes(await logService.unlockField(selected.eventId, fieldPopup.field, fieldPw));
+      setFieldPw('');
+    } catch (e: any) {
+      setFieldMsg({ type: 'err', text: e.message });
     }
   };
 
@@ -418,7 +437,9 @@ export default function Logs({ embedded = false }: { embedded?: boolean }) {
                         return (
                           <tr key={k}>
                             <td>{k}</td>
-                            <td>{m}</td>
+                            <td>
+                              <button className="pg-btn small ghost" title="Click to reveal this field" onClick={() => openField(k, m)}>{m}</button>
+                            </td>
                             {unlocked && <td style={o !== m ? { color: 'var(--color-success)', fontWeight: 600 } : undefined}>{o}</td>}
                           </tr>
                         );
@@ -438,6 +459,43 @@ export default function Logs({ embedded = false }: { embedded?: boolean }) {
                   <ActionButton variant="ghost" onClick={requestAccess}>Request access</ActionButton>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {fieldPopup && (
+          <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+            onClick={closeField}
+          >
+            <div className="panel" style={{ width: 'min(480px, 92vw)' }} onClick={(e) => e.stopPropagation()}>
+              <div className="panel-header">
+                <h2>Field: {fieldPopup.field}</h2>
+                <button className="pg-btn small ghost" onClick={closeField}><X size={14} /></button>
+              </div>
+              <div className="panel-body pg-stack">
+                {fieldMsg && <div className={`pg-msg ${fieldMsg.type}`}>{fieldMsg.text}</div>}
+                <div><div className="pg-muted">Masked value</div><pre className="pg-pre">{fieldPopup.masked}</pre></div>
+                {fieldRes && (
+                  <>
+                    <div><div className="pg-muted">Original value</div><pre className="pg-pre">{String(fieldRes.value)}</pre></div>
+                    <div>
+                      <div className="pg-muted">AES Encrypted Value (AES-256-GCM)</div>
+                      <pre className="pg-pre" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+{`blob: ${fieldRes.encrypted.blob}\niv:   ${fieldRes.encrypted.iv}\ntag:  ${fieldRes.encrypted.tag}`}
+                      </pre>
+                    </div>
+                  </>
+                )}
+                {!fieldRes && (user?.sensitiveAccess ? (
+                  <div className="pg-row">
+                    <input className="pg-input" type="password" placeholder="Second password" value={fieldPw} onChange={(e) => setFieldPw(e.target.value)} />
+                    <ActionButton disabled={!fieldPw} onClick={unlockField}>Unlock</ActionButton>
+                  </div>
+                ) : (
+                  <span className="pg-muted">You are not approved to see sensitive details.</span>
+                ))}
+              </div>
             </div>
           </div>
         )}
