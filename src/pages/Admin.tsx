@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trash2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import PageContainer from '../components/layout/PageContainer';
 import Loading from '../components/common/Loading';
 import ActionButton from '../components/common/ActionButton';
@@ -357,7 +358,12 @@ function RecycleBinTab() {
 }
 
 export default function Admin() {
-  const [tab, setTab] = useState(TABS[0]);
+  const [params, setParams] = useSearchParams();
+  const urlTab = params.get('tab');
+  const [tab, setTabState] = useState(urlTab && TABS.includes(urlTab) ? urlTab : TABS[0]);
+  // Follow ?tab= changes (e.g. clicking a notification while already on Admin).
+  useEffect(() => { if (urlTab && TABS.includes(urlTab)) setTabState(urlTab); }, [urlTab]);
+  const setTab = (t: string) => { setTabState(t); setParams(t === TABS[0] ? {} : { tab: t }, { replace: true }); };
   return (
     <PageContainer>
       <div className="pg-title-row"><h1>Admin</h1></div>

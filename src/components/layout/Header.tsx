@@ -1,7 +1,8 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Bell, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -29,10 +30,7 @@ export default function Header() {
       </div>
 
       <div className="header-right">
-        <button className="header-icon-btn" title="Notifications">
-          <Bell size={20} />
-          <span className="notification-badge"></span>
-        </button>
+        <NotificationBell />
 
         <div className="user-menu">
           <div className="user-avatar">{getInitials(user?.email)}</div>
