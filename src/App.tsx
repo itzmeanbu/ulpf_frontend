@@ -5,7 +5,6 @@ import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
 import Dashboard from './pages/Dashboard';
 import Logs from './pages/Logs';
-import Alerts from './pages/Alerts';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
 import RecycleBin from './pages/RecycleBin';
@@ -39,7 +38,6 @@ function AppLayout() {
             <Routes>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/logs" element={<Logs />} />
-              <Route path="/alerts" element={<Alerts />} />
               <Route path="/recycle-bin" element={<RecycleBin />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

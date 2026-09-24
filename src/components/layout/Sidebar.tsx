@@ -1,12 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, FileText, Bell, Shield, Settings, Trash2 } from 'lucide-react';
+import { LayoutDashboard, FileText, Shield, Settings, Trash2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+// Alerts management lives only inside the Admin page (Admin > Alerts tab) -
+// everyone else just sees the Alert Summary on their Dashboard.
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/logs', icon: FileText, label: 'Logs' },
-  { to: '/alerts', icon: Bell, label: 'Alerts' },
   { to: '/recycle-bin', icon: Trash2, label: 'Recycle Bin' },
   { to: '/admin', icon: Shield, label: 'Admin', adminOnly: true },
 ];

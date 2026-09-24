@@ -132,6 +132,39 @@ a:hover {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  padding-right: 42px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--color-text-muted, var(--color-text-secondary));
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.password-toggle-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -377,6 +410,15 @@ a:hover {
 .stat-card:hover {
   border-color: var(--color-accent);
   transform: translateY(-2px);
+}
+
+.stat-card.is-clickable {
+  cursor: pointer;
+}
+
+.stat-card.is-clickable:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .stat-icon {

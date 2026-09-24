@@ -8,11 +8,26 @@ interface StatCardProps {
   color?: string;
   trend?: number;
   trendLabel?: string;
+  onClick?: () => void;
 }
 
-export default function StatCard({ title, value, icon: Icon, color = 'blue', trend, trendLabel }: StatCardProps) {
+export default function StatCard({ title, value, icon: Icon, color = 'blue', trend, trendLabel, onClick }: StatCardProps) {
+  const clickableProps = onClick
+    ? {
+        onClick,
+        role: 'button' as const,
+        tabIndex: 0,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {};
+
   return (
-    <div className="stat-card">
+    <div className={`stat-card ${onClick ? 'is-clickable' : ''}`} {...clickableProps}>
       <div className={`stat-icon ${color}`}>
         <Icon size={24} />
       </div>
