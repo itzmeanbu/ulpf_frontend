@@ -15,6 +15,10 @@ const alertService = {
   deleteAlert(id: string) {
     return api.delete(`/admin/alerts/${id}`);
   },
+  // Admin only - moves many alerts into the Recycle Bin at once.
+  bulkDeleteAlerts(ids: string[]) {
+    return api.post('/admin/alerts/bulk-delete', { ids });
+  },
 };
 
 export default alertService;

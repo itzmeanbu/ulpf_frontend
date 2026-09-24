@@ -23,6 +23,8 @@ const adminService = {
   setLogAccess: (userId: string, categories: string[]) => api.post(`/admin/log-access/${userId}`, { categories }),
 
   getAudit: () => api.get('/admin/audit'),
+  deleteAudit: (id: string) => api.delete(`/admin/audit/${id}`),
+  bulkDeleteAudit: (ids: string[]) => api.post('/admin/audit/bulk-delete', { ids }),
   getReport: (type: string) => api.get(`/admin/reports/${type}`),
   getSecurityStatus: () => api.get('/admin/security-status'),
 
@@ -50,6 +52,13 @@ const adminService = {
   permanentlyDeleteAlert: (id: string) => api.delete(`/admin/recycle-bin/alerts/${id}`),
   permanentlyDeleteAlertsBulk: (ids: string[]) => api.post('/admin/recycle-bin/alerts/permanent-delete-bulk', { ids }),
   emptyAlertsRecycleBin: () => api.post('/admin/recycle-bin/alerts/empty'),
+
+  getDeletedAudit: () => api.get('/admin/recycle-bin/audit'),
+  restoreAudit: (id: string) => api.post(`/admin/recycle-bin/audit/${id}/restore`),
+  restoreAuditBulk: (ids: string[]) => api.post('/admin/recycle-bin/audit/restore-bulk', { ids }),
+  permanentlyDeleteAudit: (id: string) => api.delete(`/admin/recycle-bin/audit/${id}`),
+  permanentlyDeleteAuditBulk: (ids: string[]) => api.post('/admin/recycle-bin/audit/permanent-delete-bulk', { ids }),
+  emptyAuditRecycleBin: () => api.post('/admin/recycle-bin/audit/empty'),
 
   getDeletedSources: () => api.get('/admin/recycle-bin/sources'),
   restoreSource: (id: string) => api.post(`/admin/recycle-bin/sources/${id}/restore`),
